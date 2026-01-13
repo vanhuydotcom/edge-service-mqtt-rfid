@@ -64,17 +64,18 @@ Filename: "{app}\edge-service-service.exe"; Parameters: "stop"; Flags: runhidden
 Filename: "{app}\edge-service-service.exe"; Parameters: "uninstall"; Flags: runhidden
 
 [Code]
-function InitializeSetup(): Boolean;
+procedure CurStepChanged(CurStep: TSetupStep);
 var
   ResultCode: Integer;
 begin
-  Result := True;
-  
-  // Check if service is already installed and stop it
-  if FileExists(ExpandConstant('{app}\edge-service-service.exe')) then
+  // Stop and uninstall existing service before installing files
+  if CurStep = ssInstall then
   begin
-    Exec(ExpandConstant('{app}\edge-service-service.exe'), 'stop', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
-    Exec(ExpandConstant('{app}\edge-service-service.exe'), 'uninstall', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    if FileExists(ExpandConstant('{app}\edge-service-service.exe')) then
+    begin
+      Exec(ExpandConstant('{app}\edge-service-service.exe'), 'stop', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+      Exec(ExpandConstant('{app}\edge-service-service.exe'), 'uninstall', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    end;
   end;
 end;
 

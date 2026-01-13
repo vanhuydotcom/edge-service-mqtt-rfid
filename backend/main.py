@@ -8,6 +8,7 @@ import logging
 import sys
 import time
 from contextlib import asynccontextmanager
+from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import AsyncGenerator
 
@@ -25,14 +26,32 @@ from services.websocket_manager import get_ws_manager
 
 # Configure logging
 settings = get_settings()
+
+# Create logs directory if it doesn't exist
+log_dir = Path(__file__).parent / "logs"
+log_dir.mkdir(exist_ok=True)
+
+# Configure log file path
+log_file = log_dir / "edge-service.log"
+
+# Setup logging handlers
+handlers = [
+    logging.StreamHandler(sys.stdout),
+    RotatingFileHandler(
+        log_file,
+        maxBytes=10 * 1024 * 1024,  # 10 MB
+        backupCount=5,  # Keep 5 backup files
+        encoding="utf-8",
+    ),
+]
+
 logging.basicConfig(
     level=getattr(logging, settings.log_level.upper()),
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-    ],
+    handlers=handlers,
 )
 logger = logging.getLogger(__name__)
+logger.info(f"Logging to file: {log_file}")
 
 # Application start time for uptime calculation
 _start_time: float = 0
