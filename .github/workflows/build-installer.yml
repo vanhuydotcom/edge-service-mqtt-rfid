@@ -83,22 +83,6 @@ jobs:
         working-directory: installer
         run: pyinstaller --clean --noconfirm edge-service.spec
 
-      - name: Download Mosquitto
-        shell: powershell
-        run: |
-          New-Item -ItemType Directory -Force -Path installer/mosquitto
-          $mosquittoUrl = "https://mosquitto.org/files/binary/win64/mosquitto-2.0.18-install-windows-x64.exe"
-          # For CI, we'll use a portable extraction approach
-          # Download the zip version instead
-          Invoke-WebRequest -Uri "https://mosquitto.org/files/binary/win64/mosquitto-2.0.20.zip" -OutFile "mosquitto.zip"
-          Expand-Archive -Path "mosquitto.zip" -DestinationPath "installer/mosquitto" -Force
-          # Move files from subdirectory if needed
-          $subdir = Get-ChildItem -Path "installer/mosquitto" -Directory | Select-Object -First 1
-          if ($subdir) {
-            Move-Item -Path "$($subdir.FullName)/*" -Destination "installer/mosquitto/" -Force
-            Remove-Item -Path $subdir.FullName -Force
-          }
-
       - name: Download WinSW
         shell: powershell
         run: |
