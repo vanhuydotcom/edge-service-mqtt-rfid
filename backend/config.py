@@ -7,6 +7,7 @@ Supports hot-reload via API endpoint.
 import json
 import logging
 import os
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,34 @@ from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
 logger = logging.getLogger(__name__)
+
+
+def get_app_dir() -> Path:
+    """Get the application directory.
+
+    When running as PyInstaller bundle, returns the directory containing the .exe.
+    When running as script, returns the backend directory.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle - use exe directory
+        return Path(sys.executable).parent
+    else:
+        # Running as script
+        return Path(__file__).parent
+
+
+def get_bundled_resource_dir() -> Path:
+    """Get the directory containing bundled resources.
+
+    When running as PyInstaller bundle, returns the _MEIPASS temp directory.
+    When running as script, returns the backend directory.
+    """
+    if getattr(sys, 'frozen', False):
+        # Running as PyInstaller bundle - use temp extraction dir
+        return Path(sys._MEIPASS)  # type: ignore
+    else:
+        # Running as script
+        return Path(__file__).parent
 
 
 class HttpConfig(BaseModel):
@@ -127,7 +156,22 @@ def load_config(config_path: Optional[str] = None) -> EdgeConfig:
     global _config
 
     settings = get_settings()
-    path = Path(config_path or settings.config_path)
+
+    # Determine config file path
+    if config_path:
+        path = Path(config_path)
+    else:
+        # Try writable config in app directory first
+        app_config = get_app_dir() / settings.config_path
+        # Fall back to bundled config
+        bundled_config = get_bundled_resource_dir() / settings.config_path
+
+        if app_config.exists():
+            path = app_config
+        elif bundled_config.exists():
+            path = bundled_config
+        else:
+            path = app_config  # Use app dir for creating new config
 
     # Try environment-specific config first
     env_path = path.parent / f"{path.stem}.{settings.env}{path.suffix}"

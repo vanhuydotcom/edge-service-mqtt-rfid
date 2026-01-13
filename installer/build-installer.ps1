@@ -32,7 +32,7 @@ if (-not (Get-Command node -ErrorAction SilentlyContinue)) {
 # Check PyInstaller
 if (-not (Get-Command pyinstaller -ErrorAction SilentlyContinue)) {
     Write-Host "Installing PyInstaller..." -ForegroundColor Yellow
-    pip install pyinstaller
+    python -m pip install pyinstaller
 }
 
 # Check Inno Setup
@@ -47,7 +47,7 @@ Write-Host "[OK] All prerequisites found" -ForegroundColor Green
 
 Write-Host "`n[2/6] Installing Python dependencies..." -ForegroundColor Yellow
 Set-Location "$RootDir\backend"
-pip install -e .
+python -m pip install -e .
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "`n[3/6] Building Frontend..." -ForegroundColor Yellow
@@ -59,7 +59,7 @@ if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "`n[4/6] Building Backend with PyInstaller..." -ForegroundColor Yellow
 Set-Location "$ScriptDir"
-pyinstaller --clean --noconfirm edge-service.spec
+python -m PyInstaller --clean --noconfirm edge-service.spec
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 Write-Host "`n[5/6] Downloading WinSW..." -ForegroundColor Yellow

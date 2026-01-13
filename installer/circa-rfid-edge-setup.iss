@@ -37,7 +37,7 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Source: "dist\edge-service\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; WinSW for running as Windows service
 Source: "winsw\WinSW-x64.exe"; DestDir: "{app}"; DestName: "edge-service-service.exe"; Flags: ignoreversion
-Source: "edge-service.xml"; DestDir: "{app}"; Flags: ignoreversion
+Source: "edge-service.xml"; DestDir: "{app}"; DestName: "edge-service-service.xml"; Flags: ignoreversion
 
 [Dirs]
 Name: "{app}\logs"; Permissions: users-full
@@ -78,4 +78,8 @@ begin
     end;
   end;
 end;
+
+
+
+
 

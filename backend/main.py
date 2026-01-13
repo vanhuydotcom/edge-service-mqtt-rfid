@@ -16,7 +16,7 @@ from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from config import get_config, get_settings, load_config
+from config import get_app_dir, get_config, get_settings, load_config
 from database import close_db, get_alarms_count_24h, get_tag_counts, init_db
 from models import HealthResponse, StatsResponse
 from mqtt_client import get_mqtt_client
@@ -27,8 +27,8 @@ from services.websocket_manager import get_ws_manager
 # Configure logging
 settings = get_settings()
 
-# Create logs directory if it doesn't exist
-log_dir = Path(__file__).parent / "logs"
+# Create logs directory in app directory (writable location)
+log_dir = get_app_dir() / "logs"
 log_dir.mkdir(exist_ok=True)
 
 # Configure log file path

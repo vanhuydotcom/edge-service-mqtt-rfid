@@ -16,7 +16,7 @@ from typing import Any, AsyncGenerator, Optional
 
 import aiosqlite
 
-from config import get_config
+from config import get_app_dir, get_config
 from models import AlarmEvent, TagState
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,13 @@ async def init_db() -> aiosqlite.Connection:
     global _db
 
     config = get_config()
-    db_path = Path(config.storage.sqlite_path)
+
+    # Handle relative paths - make them relative to app directory
+    db_path_str = config.storage.sqlite_path
+    if not Path(db_path_str).is_absolute():
+        db_path = get_app_dir() / db_path_str
+    else:
+        db_path = Path(db_path_str)
 
     # Ensure directory exists
     db_path.parent.mkdir(parents=True, exist_ok=True)
