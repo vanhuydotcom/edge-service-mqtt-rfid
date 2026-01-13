@@ -32,10 +32,13 @@ on:
       - 'frontend/**'
       - 'installer/**'
 
+permissions:
+  contents: write
+
 jobs:
   build-windows-installer:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
