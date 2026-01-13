@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WinSW configuration for RFID Edge Service
+  This runs the edge service as a Windows service
+-->
+<service>
+  <id>CircaRfidEdgeService</id>
+  <name>Circa RFID Edge Service</name>
+  <description>RFID Security Gate Edge Service for pharmacy retail chains</description>
+  
+  <executable>%BASE%\edge-service.exe</executable>
+  <arguments></arguments>
+  
+  <logpath>%BASE%\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+  
+  <onfailure action="restart" delay="10 sec"/>
+  <onfailure action="restart" delay="20 sec"/>
+  <resetfailure>1 hour</resetfailure>
+  
+  <startmode>Automatic</startmode>
+  <waithint>15 sec</waithint>
+  <sleeptime>1 sec</sleeptime>
+  <stoptimeout>15 sec</stoptimeout>
+</service>
+

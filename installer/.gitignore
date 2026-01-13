@@ -1,0 +1,38 @@
+# Build outputs
+dist/
+build/
+output/
+*.exe
+
+# Downloaded dependencies
+winsw/
+mosquitto/
+
+# PyInstaller
+*.spec.bak
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Inno Setup
+*.iss.bak
+Setup.exe
+
+# Temporary files
+*.log
+*.tmp
+*.temp
+*.bak
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+

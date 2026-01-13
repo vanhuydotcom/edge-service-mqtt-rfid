@@ -1,0 +1,101 @@
+@import "tailwindcss";
+
+/* Circa Brand Color System */
+@theme {
+  /* Primary - Teal/Cyan (Circa brand) */
+  --color-circa-50: #E6FBFC;
+  --color-circa-100: #B8F3F6;
+  --color-circa-200: #8AEBF0;
+  --color-circa-300: #5CE3EA;
+  --color-circa-400: #2EDBE4;
+  --color-circa-500: #00CBD4;
+  --color-circa-600: #00A3AA;
+  --color-circa-700: #007A80;
+  --color-circa-800: #005156;
+  --color-circa-900: #00292B;
+
+  /* Secondary - Deep Navy */
+  --color-navy-50: #E8EEF4;
+  --color-navy-100: #C5D3E3;
+  --color-navy-200: #9FB6D0;
+  --color-navy-300: #7999BD;
+  --color-navy-400: #5C82AE;
+  --color-navy-500: #3F6B9F;
+  --color-navy-600: #365C8A;
+  --color-navy-700: #2C4A70;
+  --color-navy-800: #223858;
+  --color-navy-900: #162740;
+
+  /* Success - Green */
+  --color-success-50: #ECFDF5;
+  --color-success-100: #D1FAE5;
+  --color-success-200: #A7F3D0;
+  --color-success-300: #6EE7B7;
+  --color-success-400: #34D399;
+  --color-success-500: #10B981;
+  --color-success-600: #059669;
+  --color-success-700: #047857;
+  --color-success-800: #065F46;
+  --color-success-900: #064E3B;
+
+  /* Warning - Amber */
+  --color-warning-50: #FFFBEB;
+  --color-warning-100: #FEF3C7;
+  --color-warning-200: #FDE68A;
+  --color-warning-300: #FCD34D;
+  --color-warning-400: #FBBF24;
+  --color-warning-500: #F59E0B;
+  --color-warning-600: #D97706;
+  --color-warning-700: #B45309;
+  --color-warning-800: #92400E;
+  --color-warning-900: #78350F;
+
+  /* Danger - Red */
+  --color-danger-50: #FEF2F2;
+  --color-danger-100: #FEE2E2;
+  --color-danger-200: #FECACA;
+  --color-danger-300: #FCA5A5;
+  --color-danger-400: #F87171;
+  --color-danger-500: #EF4444;
+  --color-danger-600: #DC2626;
+  --color-danger-700: #B91C1C;
+  --color-danger-800: #991B1B;
+  --color-danger-900: #7F1D1D;
+}
+
+:root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* Custom slider styling for Circa brand */
+input[type="range"] {
+  @apply h-2 rounded-lg appearance-none cursor-pointer;
+  background: linear-gradient(to right, var(--color-circa-500), var(--color-circa-300));
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  @apply w-4 h-4 rounded-full appearance-none cursor-pointer;
+  background: var(--color-circa-600);
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+input[type="range"]::-moz-range-thumb {
+  @apply w-4 h-4 rounded-full cursor-pointer border-0;
+  background: var(--color-circa-600);
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+

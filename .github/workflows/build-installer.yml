@@ -1,0 +1,154 @@
+# Build Windows Installer
+# 
+# This workflow builds the Windows .exe installer on GitHub's Windows runner.
+# Can be triggered from any machine (Mac, Linux, Windows) via:
+# - Manual dispatch (workflow_dispatch)
+# - Push to release tags (v*)
+# - Manual trigger from GitHub UI
+#
+# The built installer is uploaded as an artifact and can be downloaded.
+
+name: Build Windows Installer
+
+on:
+  # Manual trigger from GitHub UI or API
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: false
+        default: '1.0.0'
+  
+  # Trigger on release tags
+  push:
+    tags:
+      - 'v*'
+  
+  # Optional: trigger on PR to test build
+  pull_request:
+    branches: [main]
+    paths:
+      - 'edge-service/**'
+      - 'installer/**'
+
+jobs:
+  build-windows-installer:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set version from tag or input
+        id: version
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "push" && "${{ github.ref }}" == refs/tags/v* ]]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          elif [[ -n "${{ github.event.inputs.version }}" ]]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="1.0.0"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Building version: $VERSION"
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: edge-service/frontend/package-lock.json
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+          pip install -e edge-service/backend
+
+      - name: Install Frontend dependencies
+        working-directory: edge-service/frontend
+        run: npm ci
+
+      - name: Build Frontend
+        working-directory: edge-service/frontend
+        run: npm run build
+
+      - name: Build Backend with PyInstaller
+        working-directory: installer
+        run: pyinstaller --clean --noconfirm edge-service.spec
+
+      - name: Download Mosquitto
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path installer/mosquitto
+          $mosquittoUrl = "https://mosquitto.org/files/binary/win64/mosquitto-2.0.18-install-windows-x64.exe"
+          # For CI, we'll use a portable extraction approach
+          # Download the zip version instead
+          Invoke-WebRequest -Uri "https://mosquitto.org/files/binary/win64/mosquitto-2.0.20.zip" -OutFile "mosquitto.zip"
+          Expand-Archive -Path "mosquitto.zip" -DestinationPath "installer/mosquitto" -Force
+          # Move files from subdirectory if needed
+          $subdir = Get-ChildItem -Path "installer/mosquitto" -Directory | Select-Object -First 1
+          if ($subdir) {
+            Move-Item -Path "$($subdir.FullName)/*" -Destination "installer/mosquitto/" -Force
+            Remove-Item -Path $subdir.FullName -Force
+          }
+
+      - name: Download WinSW
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path installer/winsw
+          Invoke-WebRequest -Uri "https://github.com/winsw/winsw/releases/download/v2.12.0/WinSW-x64.exe" -OutFile "installer/winsw/WinSW-x64.exe"
+
+      - name: Create placeholder icon (if not exists)
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path installer/assets
+          if (-not (Test-Path "installer/assets/circa-icon.ico")) {
+            # Create a minimal valid ICO file (1x1 pixel)
+            # In production, commit your actual icon file
+            Write-Host "Warning: Using placeholder icon. Commit your circa-icon.ico for production."
+            # Copy a system icon as placeholder
+            Copy-Item "$env:SystemRoot\System32\shell32.dll" -Destination "installer/assets/temp.dll"
+          }
+
+      - name: Install Inno Setup
+        shell: powershell
+        run: |
+          choco install innosetup -y
+          echo "C:\Program Files (x86)\Inno Setup 6" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: Update version in installer script
+        shell: powershell
+        run: |
+          $issFile = "installer/circa-rfid-edge-setup.iss"
+          $content = Get-Content $issFile -Raw
+          $content = $content -replace '#define MyAppVersion ".*"', "#define MyAppVersion `"${{ steps.version.outputs.version }}`""
+          Set-Content -Path $issFile -Value $content
+
+      - name: Build Installer
+        working-directory: installer
+        run: iscc circa-rfid-edge-setup.iss
+
+      - name: Upload Installer Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Circa-RfidEdge-Setup-${{ steps.version.outputs.version }}
+          path: installer/output/*.exe
+          retention-days: 30
+
+      - name: Create Release (on tag push)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: installer/output/*.exe
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

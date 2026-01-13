@@ -1,0 +1,125 @@
+# ===========================
+# Python
+# ===========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+.virtualenv/
+
+# PyInstaller
+*.manifest
+*.spec.bak
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+
+# ===========================
+# Node.js / Frontend
+# ===========================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build outputs
+frontend/dist/
+frontend/static/
+frontend/build/
+*.tsbuildinfo
+
+# ===========================
+# Database
+# ===========================
+*.db
+*.sqlite
+*.sqlite3
+backend/data/*.db
+backend/data/*.sqlite
+
+# ===========================
+# Logs
+# ===========================
+*.log
+logs/
+*.log.*
+
+# ===========================
+# Configuration (sensitive)
+# ===========================
+# Uncomment if you want to ignore local config overrides
+# backend/conf/edge-config.json
+# .env
+# .env.local
+
+# ===========================
+# IDE / Editors
+# ===========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.sublime-project
+*.sublime-workspace
+
+# ===========================
+# OS Files
+# ===========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# ===========================
+# Installer Build Artifacts
+# ===========================
+installer/dist/
+installer/build/
+installer/output/
+installer/winsw/
+installer/mosquitto/
+installer/*.exe
+
+# ===========================
+# Temporary Files
+# ===========================
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ===========================
+# Git
+# ===========================
+*.orig
+*.rej
+

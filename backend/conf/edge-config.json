@@ -1,0 +1,40 @@
+{
+  "http": {
+    "host": "0.0.0.0",
+    "port": 8088
+  },
+  "mqtt": {
+    "host": "192.168.219.24",
+    "port": 1883,
+    "username": "",
+    "password": "",
+    "use_tls": false
+  },
+  "gate": {
+    "client_id": "nextwaves-2de8",
+    "topic_tag_stream": "reader/{client_id}/stream/tag",
+    "topic_gpo_cmd": "reader/{client_id}/cmd/gpo",
+    "topic_rfid_cmd": "reader/{client_id}/cmd/rfid",
+    "topic_power_cmd": "reader/{client_id}/cmd/power",
+    "topic_data_response": "reader/{client_id}/data/response",
+    "topic_data_status": "reader/{client_id}/data/status",
+    "gpo_pulse_seconds": 5
+  },
+  "ttl": {
+    "in_cart_seconds": 3600,
+    "paid_seconds": 86400,
+    "cleanup_interval_seconds": 60
+  },
+  "decision": {
+    "pass_when_in_cart": true,
+    "debounce_ms": 1000,
+    "alarm_cooldown_ms": 3000
+  },
+  "storage": {
+    "sqlite_path": "data/edge.db"
+  },
+  "auth": {
+    "enabled": false,
+    "token": ""
+  }
+}
