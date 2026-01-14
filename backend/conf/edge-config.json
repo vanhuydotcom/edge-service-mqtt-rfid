@@ -21,7 +21,7 @@
     "gpo_pulse_seconds": 5
   },
   "ttl": {
-    "in_cart_seconds": 10,
+    "in_cart_seconds": 20,
     "paid_seconds": 86400,
     "cleanup_interval_seconds": 5
   },
