@@ -139,7 +139,7 @@ export default function Dashboard() {
                       {new Date(event.timestamp).toLocaleTimeString()}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">
-                      {event.tag_id.substring(0, 16)}...
+                      {event.tag_id}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {event.rssi?.toFixed(1) ?? '-'} dBm
