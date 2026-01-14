@@ -22,14 +22,16 @@ async def _run_cleanup_loop() -> None:
 
     Continuously cleans up expired tags at configured intervals.
     Also cleans up old decision engine entries.
+    Config is re-read on each iteration to support hot-reload.
     """
-    config = get_config()
-    interval = config.ttl.cleanup_interval_seconds
-
-    logger.info(f"TTL cleanup service started (interval: {interval}s)")
+    logger.info("TTL cleanup service started")
 
     while True:
         try:
+            # Re-read config on each iteration to support hot-reload
+            config = get_config()
+            interval = config.ttl.cleanup_interval_seconds
+
             # Clean up expired tags
             deleted = await cleanup_expired_tags()
             if deleted > 0:
