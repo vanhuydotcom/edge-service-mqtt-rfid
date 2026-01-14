@@ -362,6 +362,51 @@ async def remove_qr_codes(qr_codes: list[str], order_id: Optional[str] = None) -
 remove_tags = remove_qr_codes
 
 
+async def update_ttl_for_existing_tags(in_cart_seconds: int, paid_seconds: int) -> tuple[int, int]:
+    """Update expires_at for all existing tags based on new TTL values.
+
+    Recalculates expires_at = updated_at + ttl_seconds for each tag.
+    This allows config TTL changes to apply to existing tags.
+
+    Args:
+        in_cart_seconds: New TTL for IN_CART tags.
+        paid_seconds: New TTL for PAID tags.
+
+    Returns:
+        Tuple of (in_cart_updated, paid_updated) counts.
+    """
+    db = await get_db()
+
+    # Update IN_CART tags
+    await db.execute(
+        """
+        UPDATE tag_state
+        SET expires_at = updated_at + ?
+        WHERE state = 'IN_CART'
+        """,
+        (in_cart_seconds,),
+    )
+    in_cart_updated = db.total_changes
+
+    # Update PAID tags
+    await db.execute(
+        """
+        UPDATE tag_state
+        SET expires_at = updated_at + ?
+        WHERE state = 'PAID'
+        """,
+        (paid_seconds,),
+    )
+    paid_updated = db.total_changes
+
+    await db.commit()
+
+    if in_cart_updated > 0 or paid_updated > 0:
+        logger.info(f"Updated TTL for {in_cart_updated} IN_CART and {paid_updated} PAID tags")
+
+    return in_cart_updated, paid_updated
+
+
 async def cleanup_expired_tags() -> int:
     """Remove expired tags from database.
 

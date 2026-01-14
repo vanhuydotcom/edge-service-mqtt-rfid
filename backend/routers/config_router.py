@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Header, HTTPException
 from pydantic import BaseModel
 
 from config import EdgeConfig, get_config, reload_config, save_config
+from database import update_ttl_for_existing_tags
 
 logger = logging.getLogger(__name__)
 
@@ -95,6 +96,14 @@ async def update_config(
         new_config = EdgeConfig.model_validate(config_dict)
         save_config(new_config)
         logger.info("Configuration updated successfully")
+
+        # If TTL values changed, update expires_at for existing tags
+        if request.ttl:
+            in_cart_ttl = new_config.ttl.in_cart_seconds
+            paid_ttl = new_config.ttl.paid_seconds
+            await update_ttl_for_existing_tags(in_cart_ttl, paid_ttl)
+            logger.info(f"Applied new TTL to existing tags: IN_CART={in_cart_ttl}s, PAID={paid_ttl}s")
+
     except Exception as e:
         logger.error(f"Failed to update configuration: {e}")
         raise HTTPException(status_code=400, detail=f"Invalid configuration: {e}") from e
