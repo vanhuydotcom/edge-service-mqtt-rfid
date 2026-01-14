@@ -65,19 +65,23 @@ async def register_qr_codes_in_cart(
     """
     logger.info(f"Registering {','.join(request.qr_codes)} QR codes in cart for order {request.order_id}")
 
+    # Use config default if ttl_seconds not explicitly provided in request
+    config = get_config()
+    ttl_seconds = request.ttl_seconds if request.ttl_seconds is not None else config.ttl.in_cart_seconds
+
     upserted, ignored_paid = await upsert_qr_codes_in_cart(
         qr_codes=request.qr_codes,
         order_id=request.order_id,
         pos_id=request.pos_id,
         store_id=request.store_id,
-        ttl_seconds=request.ttl_seconds,
+        ttl_seconds=ttl_seconds,
     )
 
     return TagsInCartResponse(
         ok=True,
         upserted=upserted,
         ignored_paid=ignored_paid,
-        expires_in_seconds=request.ttl_seconds,
+        expires_in_seconds=ttl_seconds,
     )
 
 
@@ -93,18 +97,22 @@ async def register_qr_codes_paid(
     """
     logger.info(f"Registering {len(request.qr_codes)} paid QR codes for order {request.order_id}")
 
+    # Use config default if ttl_seconds not explicitly provided in request
+    config = get_config()
+    ttl_seconds = request.ttl_seconds if request.ttl_seconds is not None else config.ttl.paid_seconds
+
     upserted = await upsert_qr_codes_paid(
         qr_codes=request.qr_codes,
         order_id=request.order_id,
         pos_id=request.pos_id,
         store_id=request.store_id,
-        ttl_seconds=request.ttl_seconds,
+        ttl_seconds=ttl_seconds,
     )
 
     return TagsPaidResponse(
         ok=True,
         upserted=upserted,
-        expires_in_seconds=request.ttl_seconds,
+        expires_in_seconds=ttl_seconds,
     )
 
 

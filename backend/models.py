@@ -38,7 +38,7 @@ class TagsInCartRequest(BaseModel):
     store_id: str = Field(..., description="Store identifier")
     pos_id: str = Field(..., description="POS terminal identifier")
     order_id: str = Field(..., description="Order identifier")
-    ttl_seconds: int = Field(default=3600, ge=60, le=86400, description="Time-to-live in seconds")
+    ttl_seconds: Optional[int] = Field(default=None, ge=60, le=86400, description="Time-to-live in seconds (uses config default if not provided)")
     qr_codes: list[str] = Field(..., min_length=1, description="List of QR codes to register")
 
 
@@ -51,7 +51,7 @@ class TagsPaidRequest(BaseModel):
     store_id: str = Field(..., description="Store identifier")
     pos_id: str = Field(..., description="POS terminal identifier")
     order_id: str = Field(..., description="Order identifier")
-    ttl_seconds: int = Field(default=86400, ge=60, le=604800, description="Time-to-live in seconds")
+    ttl_seconds: Optional[int] = Field(default=None, ge=60, le=604800, description="Time-to-live in seconds (uses config default if not provided)")
     qr_codes: list[str] = Field(..., min_length=1, description="List of QR codes to register")
 
 
