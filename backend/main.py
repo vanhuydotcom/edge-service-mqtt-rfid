@@ -189,6 +189,38 @@ async def get_cleanup_status() -> dict:
     }
 
 
+# Debug endpoint for viewing logs
+@app.get("/v1/debug/logs", tags=["debug"])
+async def get_logs(lines: int = 100) -> dict:
+    """Get recent log entries (debug endpoint).
+
+    Args:
+        lines: Number of recent lines to return (default 100, max 500).
+
+    Returns:
+        Dict with log file path and recent log lines.
+    """
+    lines = min(lines, 500)  # Limit to 500 lines max
+
+    log_path = get_app_dir() / "logs" / "edge-service.log"
+
+    if not log_path.exists():
+        return {"log_path": str(log_path), "exists": False, "lines": []}
+
+    try:
+        with open(log_path, "r", encoding="utf-8") as f:
+            all_lines = f.readlines()
+            recent_lines = all_lines[-lines:] if len(all_lines) > lines else all_lines
+            return {
+                "log_path": str(log_path),
+                "exists": True,
+                "total_lines": len(all_lines),
+                "lines": [line.rstrip() for line in recent_lines],
+            }
+    except Exception as e:
+        return {"log_path": str(log_path), "exists": True, "error": str(e), "lines": []}
+
+
 # WebSocket endpoint
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket) -> None:
