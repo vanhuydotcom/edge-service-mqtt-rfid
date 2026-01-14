@@ -21,7 +21,7 @@ from database import close_db, get_alarms_count_24h, get_tag_counts, init_db
 from models import HealthResponse, StatsResponse
 from mqtt_client import get_mqtt_client
 from routers import alarms, calibration, config_router, tags
-from services.ttl_cleanup import start_cleanup_service, stop_cleanup_service
+from services.ttl_cleanup import start_cleanup_service, stop_cleanup_service, is_cleanup_running
 from services.websocket_manager import get_ws_manager
 
 # Configure logging
@@ -171,6 +171,22 @@ async def get_stats() -> StatsResponse:
         paid_count=counts["paid_count"],
         alarms_last_24h=alarms_24h,
     )
+
+
+# Debug endpoint for TTL cleanup status
+@app.get("/v1/debug/cleanup", tags=["debug"])
+async def get_cleanup_status() -> dict:
+    """Get TTL cleanup service status (debug endpoint).
+
+    Returns cleanup task status and current TTL configuration.
+    """
+    config = get_config()
+    return {
+        "cleanup_running": is_cleanup_running(),
+        "cleanup_interval_seconds": config.ttl.cleanup_interval_seconds,
+        "in_cart_ttl_seconds": config.ttl.in_cart_seconds,
+        "paid_ttl_seconds": config.ttl.paid_seconds,
+    }
 
 
 # WebSocket endpoint

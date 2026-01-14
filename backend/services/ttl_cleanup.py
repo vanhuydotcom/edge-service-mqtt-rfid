@@ -26,11 +26,18 @@ async def _run_cleanup_loop() -> None:
     """
     logger.info("TTL cleanup service started")
 
+    # Log first run immediately
+    _first_run = True
+
     while True:
         try:
             # Re-read config on each iteration to support hot-reload
             config = get_config()
             interval = config.ttl.cleanup_interval_seconds
+
+            if _first_run:
+                logger.info(f"TTL cleanup: interval={interval}s, running first cleanup...")
+                _first_run = False
 
             # Clean up expired tags
             deleted = await cleanup_expired_tags()
@@ -82,4 +89,13 @@ async def stop_cleanup_service() -> None:
         logger.info("TTL cleanup service stopped")
 
     _cleanup_task = None
+
+
+def is_cleanup_running() -> bool:
+    """Check if cleanup service is currently running.
+
+    Returns:
+        True if cleanup task exists and is not done.
+    """
+    return _cleanup_task is not None and not _cleanup_task.done()
 
