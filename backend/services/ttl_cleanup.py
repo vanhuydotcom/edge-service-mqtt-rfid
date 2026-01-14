@@ -30,8 +30,6 @@ async def _run_cleanup_loop() -> None:
 
     while True:
         try:
-            await asyncio.sleep(interval)
-
             # Clean up expired tags
             deleted = await cleanup_expired_tags()
             if deleted > 0:
@@ -40,6 +38,9 @@ async def _run_cleanup_loop() -> None:
             # Clean up decision engine tracking
             engine = get_decision_engine()
             engine.cleanup_old_entries(max_age_seconds=3600)
+
+            # Sleep before next cleanup cycle
+            await asyncio.sleep(interval)
 
         except asyncio.CancelledError:
             logger.info("TTL cleanup service stopping")
