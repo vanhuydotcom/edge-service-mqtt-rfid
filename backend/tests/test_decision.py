@@ -4,9 +4,10 @@ Tests the EPC → QR code decoding and matching logic.
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from models import Decision, TagState
+from mqtt_client import MqttClient
 from services.decision import DecisionEngine
 from services.epc_decoder import decode_epc
 
@@ -205,4 +206,166 @@ class TestDecisionEngine:
         assert removed == 2
         assert "A0B0C0FFFF" not in decision_engine._last_seen
         assert "A0B0C0FFFF" not in decision_engine._last_alarm
+
+
+class TestMqttTagDetection:
+    """Test cases for MQTT tag detection payload handling."""
+
+    @pytest.fixture
+    def mqtt_client(self) -> MqttClient:
+        """Create a fresh MQTT client for testing."""
+        return MqttClient()
+
+    @pytest.mark.asyncio
+    async def test_nextwaves_format_single_tag(self, mqtt_client: MqttClient) -> None:
+        """Nextwaves format with single tag in array should be processed."""
+        payload = {
+            "tags": [{"epc": "30396062C38DA1C0007D4881", "rssi": -48, "ant": 3, "n": 52}],
+            "ts": "1970-01-01T10:02:12.520+0700",
+            "id": "nextwaves-2de8",
+            "cnt": 1,
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_called_once_with(
+                "30396062C38DA1C0007D4881",
+                "nextwaves-2de8",
+                -48,
+                3,
+            )
+
+    @pytest.mark.asyncio
+    async def test_nextwaves_format_multiple_tags(self, mqtt_client: MqttClient) -> None:
+        """Nextwaves format with multiple tags should process all."""
+        payload = {
+            "tags": [
+                {"epc": "EPC001", "rssi": -45, "ant": 1},
+                {"epc": "EPC002", "rssi": -50, "ant": 2},
+                {"epc": "EPC003", "rssi": -55, "ant": 3},
+            ],
+            "id": "reader-01",
+            "cnt": 3,
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            assert mock_process.call_count == 3
+            mock_process.assert_any_call("EPC001", "reader-01", -45, 1)
+            mock_process.assert_any_call("EPC002", "reader-01", -50, 2)
+            mock_process.assert_any_call("EPC003", "reader-01", -55, 3)
+
+    @pytest.mark.asyncio
+    async def test_legacy_format_with_data_field(self, mqtt_client: MqttClient) -> None:
+        """Legacy format with nested data field should be processed."""
+        payload = {
+            "data": {"idHex": "LEGACY_EPC_001", "peakRssi": -40, "antenna": 2},
+            "clientId": "legacy-gate-01",
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_called_once_with(
+                "LEGACY_EPC_001",
+                "legacy-gate-01",
+                -40,
+                2,
+            )
+
+    @pytest.mark.asyncio
+    async def test_legacy_format_flat_structure(self, mqtt_client: MqttClient) -> None:
+        """Legacy format with flat structure should be processed."""
+        payload = {
+            "idHex": "FLAT_EPC_001",
+            "peakRssi": -35,
+            "antenna": 1,
+            "clientId": "flat-gate-01",
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_called_once_with(
+                "FLAT_EPC_001",
+                "flat-gate-01",
+                -35,
+                1,
+            )
+
+    @pytest.mark.asyncio
+    async def test_nextwaves_format_with_epc_field_alias(self, mqtt_client: MqttClient) -> None:
+        """Nextwaves format should also accept idHex in tag array."""
+        payload = {
+            "tags": [{"idHex": "ALIAS_EPC", "rssi": -42, "ant": 4}],
+            "id": "reader-02",
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_called_once_with("ALIAS_EPC", "reader-02", -42, 4)
+
+    @pytest.mark.asyncio
+    async def test_legacy_format_with_epc_field(self, mqtt_client: MqttClient) -> None:
+        """Legacy format should also accept epc field."""
+        payload = {
+            "epc": "LEGACY_EPC_FIELD",
+            "rssi": -38,
+            "ant": 2,
+            "clientId": "gate-03",
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_called_once_with("LEGACY_EPC_FIELD", "gate-03", -38, 2)
+
+    @pytest.mark.asyncio
+    async def test_missing_epc_in_tags_array_skipped(self, mqtt_client: MqttClient) -> None:
+        """Tags without EPC in array should be skipped with warning."""
+        payload = {
+            "tags": [
+                {"rssi": -45, "ant": 1},  # Missing EPC - should be skipped
+                {"epc": "VALID_EPC", "rssi": -50, "ant": 2},
+            ],
+            "id": "reader-01",
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            # Only the valid tag should be processed
+            mock_process.assert_called_once_with("VALID_EPC", "reader-01", -50, 2)
+
+    @pytest.mark.asyncio
+    async def test_missing_epc_in_legacy_format_returns_early(self, mqtt_client: MqttClient) -> None:
+        """Legacy format without EPC should return early."""
+        payload = {
+            "data": {"peakRssi": -40, "antenna": 2},
+            "clientId": "gate-01",
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process:
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_not_called()
+
+    @pytest.mark.asyncio
+    async def test_fallback_to_config_gate_id(self, mqtt_client: MqttClient) -> None:
+        """Should fallback to config gate_id when not in payload."""
+        payload = {
+            "tags": [{"epc": "TEST_EPC", "rssi": -45, "ant": 1}],
+            # No 'id' or 'clientId' field
+        }
+
+        with patch.object(mqtt_client, "_process_single_tag", new_callable=AsyncMock) as mock_process, \
+             patch("mqtt_client.get_config") as mock_config:
+            mock_config.return_value.gate.client_id = "default-gate"
+
+            await mqtt_client._handle_tag_detection(payload)
+
+            mock_process.assert_called_once_with("TEST_EPC", "default-gate", -45, 1)
 

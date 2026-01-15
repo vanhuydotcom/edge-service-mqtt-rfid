@@ -226,8 +226,12 @@ class MqttClient:
     async def _handle_tag_detection(self, payload: dict[str, Any]) -> None:
         """Process tag detection from gate reader.
 
+        Supports two payload formats:
+        1. Legacy format: {"data": {"idHex": "...", "peakRssi": ..., "antenna": ...}, "clientId": "..."}
+        2. Nextwaves format: {"tags": [{"epc": "...", "rssi": -48, "ant": 3}], "id": "...", "cnt": 1}
+
         Flow:
-        1. Extract EPC (idHex) from payload
+        1. Extract EPC from payload (handles both formats)
         2. Pass EPC to decision engine
         3. Decision engine decodes EPC → QR code
         4. Decision engine matches QR against database
@@ -236,18 +240,47 @@ class MqttClient:
         Args:
             payload: Message payload with tag data.
         """
-        # Extract tag data - handle nested 'data' field
+        # Get gate_id from various possible fields
+        gate_id = payload.get("clientId") or payload.get("id") or get_config().gate.client_id
+
+        # Check for Nextwaves format: {"tags": [...], "id": "...", "cnt": ...}
+        if "tags" in payload and isinstance(payload["tags"], list):
+            for tag in payload["tags"]:
+                epc = tag.get("epc") or tag.get("idHex") or tag.get("tag_id")
+                if not epc:
+                    logger.warning("Tag in array missing EPC field")
+                    continue
+                rssi = tag.get("rssi") or tag.get("peakRssi")
+                antenna = tag.get("ant") or tag.get("antenna")
+                await self._process_single_tag(epc, gate_id, rssi, antenna)
+            return
+
+        # Legacy format: {"data": {...}, "clientId": "..."} or flat {"idHex": "..."}
         data = payload.get("data", payload)
-        # idHex is the raw EPC from the RFID reader
-        epc = data.get("idHex") or data.get("tag_id")
+        epc = data.get("idHex") or data.get("epc") or data.get("tag_id")
         if not epc:
-            logger.warning("Tag detection missing EPC (idHex)")
+            logger.warning("Tag detection missing EPC (idHex/epc)")
             return
 
         rssi = data.get("peakRssi") or data.get("rssi")
-        antenna = data.get("antenna")
-        gate_id = payload.get("clientId") or get_config().gate.client_id
+        antenna = data.get("antenna") or data.get("ant")
+        await self._process_single_tag(epc, gate_id, rssi, antenna)
 
+    async def _process_single_tag(
+        self,
+        epc: str,
+        gate_id: str,
+        rssi: Optional[float] = None,
+        antenna: Optional[int] = None,
+    ) -> None:
+        """Process a single tag detection.
+
+        Args:
+            epc: RFID EPC identifier.
+            gate_id: Gate reader identifier.
+            rssi: Signal strength (dBm).
+            antenna: Antenna number that detected the tag.
+        """
         # Make decision (EPC is decoded to QR inside decision engine)
         engine = get_decision_engine()
         decision, reason, qr_code = await engine.make_decision(epc, gate_id, rssi, antenna)
