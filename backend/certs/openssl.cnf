@@ -15,4 +15,5 @@ subjectAltName = @alt_names
 IP.1 = 10.10.3.115
 IP.2 = 127.0.0.1
 IP.3 = 10.10.0.213
+IP.4 = 192.168.1.5
 DNS.1 = localhost
