@@ -86,13 +86,34 @@ jobs:
         working-directory: installer
         run: pyinstaller --clean --noconfirm edge-service.spec
 
-      - name: Prepare installer assets (setup script + Root CA)
+      - name: Prepare installer assets (setup script + Root CA + certs)
         shell: powershell
         run: |
           $DistDir = "installer/dist/edge-service"
+
+          # Copy setup script
           Copy-Item -Force "installer/setup_system.ps1" -Destination $DistDir
           Write-Host "[OK] setup_system.ps1 copied"
-          if (Test-Path "installer/assets/rootCA.pem") { Copy-Item -Force "installer/assets/rootCA.pem" -Destination $DistDir; Write-Host "[OK] rootCA.pem copied" } else { Write-Host "[WARN] rootCA.pem not found" }
+
+          # Copy Root CA
+          if (Test-Path "installer/assets/rootCA.pem") {
+            Copy-Item -Force "installer/assets/rootCA.pem" -Destination $DistDir
+            Write-Host "[OK] rootCA.pem copied"
+          } else {
+            Write-Host "[WARN] rootCA.pem not found"
+          }
+
+          # Copy certs folder (cert.pem + key.pem for HTTPS)
+          $CertsSource = "backend/certs"
+          $CertsDest = "$DistDir/certs"
+          if (Test-Path $CertsSource) {
+            New-Item -ItemType Directory -Force -Path $CertsDest | Out-Null
+            Copy-Item -Force "$CertsSource/cert.pem" -Destination $CertsDest
+            Copy-Item -Force "$CertsSource/key.pem" -Destination $CertsDest
+            Write-Host "[OK] certs folder copied (cert.pem, key.pem)"
+          } else {
+            Write-Host "[WARN] backend/certs not found - HTTPS will not work"
+          }
 
       - name: Download WinSW
         shell: powershell
