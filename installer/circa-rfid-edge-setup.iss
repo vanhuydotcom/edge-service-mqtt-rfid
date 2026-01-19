@@ -38,6 +38,9 @@ Source: "dist\edge-service\*"; DestDir: "{app}"; Flags: ignoreversion recursesub
 ; WinSW for running as Windows service
 Source: "winsw\WinSW-x64.exe"; DestDir: "{app}"; DestName: "edge-service-service.exe"; Flags: ignoreversion
 Source: "edge-service.xml"; DestDir: "{app}"; DestName: "edge-service-service.xml"; Flags: ignoreversion
+; Certificate installation script and Root CA
+Source: "setup_system.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "assets\rootCA.pem"; DestDir: "{app}"; Flags: ignoreversion
 
 [Dirs]
 Name: "{app}\logs"; Permissions: users-full
