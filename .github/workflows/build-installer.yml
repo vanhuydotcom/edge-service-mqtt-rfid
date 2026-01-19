@@ -93,14 +93,15 @@ jobs:
 
           # Copy setup script
           Copy-Item -Force "installer/setup_system.ps1" -Destination $DistDir
-          Write-Host "✓ setup_system.ps1 copied"
+          Write-Host "[OK] setup_system.ps1 copied"
 
           # Copy rootCA.pem if exists
           if (Test-Path "installer/assets/rootCA.pem") {
             Copy-Item -Force "installer/assets/rootCA.pem" -Destination $DistDir
-            Write-Host "✓ rootCA.pem copied"
-          } else {
-            Write-Host "⚠ rootCA.pem not found - Root CA import will be skipped on install"
+            Write-Host "[OK] rootCA.pem copied"
+          }
+          else {
+            Write-Host "[WARN] rootCA.pem not found - Root CA import will be skipped on install"
           }
 
       - name: Download WinSW
