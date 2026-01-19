@@ -123,3 +123,4 @@ installer/*.exe
 *.orig
 *.rej
 
+backend/certs/key.pem

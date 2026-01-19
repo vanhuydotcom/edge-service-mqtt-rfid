@@ -52,6 +52,8 @@ Name: "{group}\Logs Folder"; Filename: "{app}\logs"
 Name: "{group}\Uninstall {#MyAppName}"; Filename: "{uninstallexe}"
 
 [Run]
+; Configure system (hosts + Root CA)
+Filename: "powershell.exe"; Parameters: "-NoProfile -ExecutionPolicy Bypass -File ""{app}\setup_system.ps1"""; StatusMsg: "Configuring system (hosts and Root CA)..."; Flags: runhidden waituntilterminated
 ; Install and start the service
 Filename: "{app}\edge-service-service.exe"; Parameters: "install"; StatusMsg: "Installing service..."; Flags: runhidden
 Filename: "{app}\edge-service-service.exe"; Parameters: "start"; StatusMsg: "Starting service..."; Flags: runhidden

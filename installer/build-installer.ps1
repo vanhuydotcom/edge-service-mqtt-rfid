@@ -62,6 +62,26 @@ Set-Location "$ScriptDir"
 python -m PyInstaller --clean --noconfirm edge-service.spec
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+Write-Host "`n[4.5/6] Preparing installer assets (rootCA/setup script)..." -ForegroundColor Yellow
+# Ensure dist output exists
+$DistDir = Join-Path $ScriptDir 'dist/edge-service'
+if (-not (Test-Path $DistDir)) {
+    Write-Host "ERROR: $DistDir not found. PyInstaller build may have failed." -ForegroundColor Red
+    exit 1
+}
+
+# Copy setup script so installer can run it post-install
+Copy-Item -Force (Join-Path $ScriptDir 'setup_system.ps1') -Destination $DistDir
+
+# Optionally include rootCA.pem from assets if provided
+$AssetsDir = Join-Path $ScriptDir 'assets'
+if (Test-Path (Join-Path $AssetsDir 'rootCA.pem')) {
+    Copy-Item -Force (Join-Path $AssetsDir 'rootCA.pem') -Destination $DistDir
+    Write-Host "[OK] rootCA.pem included" -ForegroundColor Green
+} else {
+    Write-Host "[INFO] assets\\rootCA.pem not found; Root CA import will be skipped on install" -ForegroundColor Yellow
+}
+
 Write-Host "`n[5/6] Downloading WinSW..." -ForegroundColor Yellow
 New-Item -ItemType Directory -Force -Path "winsw" | Out-Null
 if (-not (Test-Path "winsw\WinSW-x64.exe")) {

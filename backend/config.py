@@ -50,6 +50,10 @@ class HttpConfig(BaseModel):
 
     host: str = "0.0.0.0"
     port: int = 8088
+    # HTTPS/TLS configuration (optional)
+    use_ssl: bool = False
+    ssl_certfile: str = "certs/cert.pem"
+    ssl_keyfile: str = "certs/key.pem"
 
 
 class MqttConfig(BaseModel):

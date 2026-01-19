@@ -265,9 +265,46 @@ if __name__ == "__main__":
     import uvicorn
 
     config = get_config()
+
+    # Prepare optional SSL settings
+    http_cfg = config.http
+    app_dir = get_app_dir()
+
+    ssl_kwargs: dict[str, str] = {}
+    try:
+        certfile_cfg = getattr(http_cfg, "ssl_certfile", "certs/cert.pem")
+        keyfile_cfg = getattr(http_cfg, "ssl_keyfile", "certs/key.pem")
+
+        cert_path = Path(certfile_cfg) if Path(certfile_cfg).is_absolute() else app_dir / certfile_cfg
+        key_path = Path(keyfile_cfg) if Path(keyfile_cfg).is_absolute() else app_dir / keyfile_cfg
+
+        enable_ssl = bool(getattr(http_cfg, "use_ssl", False))
+
+        if enable_ssl or (not enable_ssl and cert_path.exists() and key_path.exists()):
+            if cert_path.exists() and key_path.exists():
+                if not enable_ssl:
+                    logger.info(
+                        "TLS certificate detected at %s and %s. Enabling HTTPS automatically.",
+                        cert_path,
+                        key_path,
+                    )
+                ssl_kwargs = {
+                    "ssl_certfile": str(cert_path),
+                    "ssl_keyfile": str(key_path),
+                }
+            else:
+                logger.warning(
+                    "HTTPS requested but certificate files not found (cert=%s, key=%s). Falling back to HTTP.",
+                    cert_path,
+                    key_path,
+                )
+    except Exception as e:
+        logger.warning("Error while preparing TLS settings: %s. Falling back to HTTP.", e)
+
     uvicorn.run(
         app,
-        host=config.http.host,
-        port=config.http.port,
+        host=http_cfg.host,
+        port=http_cfg.port,
+        **ssl_kwargs,
     )
 
