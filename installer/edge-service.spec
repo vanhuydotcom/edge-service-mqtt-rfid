@@ -37,6 +37,11 @@ datas = [
     (os.path.join(backend_path, 'conf'), 'conf'),  # Configuration files
 ]
 
+# Add certs folder if it exists (for HTTPS)
+certs_path = os.path.join(backend_path, 'certs')
+if os.path.exists(certs_path):
+    datas.append((certs_path, 'certs'))
+
 # Add frontend static files if they exist
 if os.path.exists(frontend_static_path):
     datas.append((frontend_static_path, 'static'))
