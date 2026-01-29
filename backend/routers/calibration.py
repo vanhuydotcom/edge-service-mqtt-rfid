@@ -33,6 +33,14 @@ class CalibrationResponse(BaseModel):
     message: str
 
 
+class InventoryStatusResponse(BaseModel):
+    """Inventory status response."""
+
+    ok: bool = True
+    mqtt_connected: bool
+    inventory_running: bool
+
+
 @router.post("/start", response_model=CalibrationResponse)
 async def start_inventory(
     _: Annotated[None, Depends(verify_token)],
@@ -147,6 +155,49 @@ async def get_antenna_power(
     return CalibrationResponse(
         ok=True,
         message="Antenna power query sent. Response will arrive via WebSocket.",
+    )
+
+
+class InventoryStatusResponse(BaseModel):
+    """Inventory status response."""
+
+    ok: bool = True
+    mqtt_connected: bool
+    inventory_running: bool
+
+
+@router.get("/inventory-status", response_model=InventoryStatusResponse)
+async def get_inventory_status(
+    _: Annotated[None, Depends(verify_token)],
+) -> InventoryStatusResponse:
+    """Get current inventory scan status.
+
+    Returns the current state of the RFID inventory scan (running or stopped).
+    This is tracked locally based on start/stop command responses.
+    """
+    mqtt = get_mqtt_client()
+
+    return InventoryStatusResponse(
+        ok=True,
+        mqtt_connected=mqtt.is_connected,
+        inventory_running=mqtt.is_inventory_running,
+    )
+
+
+@router.get("/inventory-status", response_model=InventoryStatusResponse)
+async def get_inventory_status(
+    _: Annotated[None, Depends(verify_token)],
+) -> InventoryStatusResponse:
+    """Get current inventory scan status.
+
+    Returns the current state of the RFID inventory scan (running or stopped).
+    """
+    mqtt = get_mqtt_client()
+
+    return InventoryStatusResponse(
+        ok=True,
+        mqtt_connected=mqtt.is_connected,
+        inventory_running=mqtt.is_inventory_running,
     )
 
 

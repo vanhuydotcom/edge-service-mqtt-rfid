@@ -4,6 +4,7 @@ import type {
   ConfigResponse,
   AlarmListResponse,
   CalibrationResponse,
+  InventoryStatusResponse,
   EdgeConfig,
 } from './types'
 
@@ -69,6 +70,9 @@ export const getAntennaPower = (): Promise<CalibrationResponse> =>
 
 export const getReaderStatus = (): Promise<CalibrationResponse> =>
   fetchApi('/v1/calibration/status', { method: 'GET' })
+
+export const getInventoryStatus = (): Promise<InventoryStatusResponse> =>
+  fetchApi('/v1/calibration/inventory-status', { method: 'GET' })
 
 // Alarms
 export const getAlarms = (params: {

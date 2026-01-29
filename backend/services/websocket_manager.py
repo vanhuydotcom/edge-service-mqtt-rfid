@@ -167,6 +167,19 @@ class WebSocketManager:
             "antennas": payload.get("antennas"),
             "network": payload.get("network"),
             "system": payload.get("system"),
+            "inventory_running": payload.get("inventory_running"),
+            "timestamp": datetime.now(timezone.utc),
+        })
+
+    async def broadcast_inventory_state(self, is_running: bool) -> None:
+        """Broadcast an INVENTORY_STATE event when inventory scan starts or stops.
+
+        Args:
+            is_running: True if inventory scan is running, False if stopped.
+        """
+        await self.broadcast({
+            "type": "INVENTORY_STATE",
+            "inventory_running": is_running,
             "timestamp": datetime.now(timezone.utc),
         })
 

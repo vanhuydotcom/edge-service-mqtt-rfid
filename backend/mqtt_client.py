@@ -33,6 +33,9 @@ class MqttClient:
         self._last_tag_seen: float = 0
         self._last_response: Optional[dict[str, Any]] = None
         self._last_reader_status: Optional[dict[str, Any]] = None
+        # Track whether RFID inventory scan is currently running on the reader.
+        # Updated based on successful start/stop command responses.
+        self._inventory_running: bool = False
 
     @property
     def is_connected(self) -> bool:
@@ -55,6 +58,15 @@ class MqttClient:
     def last_reader_status(self) -> Optional[dict[str, Any]]:
         """Get the last reader status received."""
         return self._last_reader_status
+
+    @property
+    def is_inventory_running(self) -> bool:
+        """Check if RFID inventory scan is currently running.
+
+        This state is derived from the last successful start/stop command response.
+        Returns False if no start command has been received yet.
+        """
+        return self._inventory_running
 
     def _get_topic(self, template: str) -> str:
         """Resolve topic template with client_id."""
@@ -190,8 +202,20 @@ class MqttClient:
 
         logger.info(f"Command response: {command}/{action} -> {status}: {message}")
 
-        # Broadcast to WebSocket clients
+        # Track inventory running state based on successful rfid start/stop commands
         ws_manager = get_ws_manager()
+        if command == "rfid" and status == "success":
+            old_state = self._inventory_running
+            if action == "start":
+                self._inventory_running = True
+                logger.info("Inventory scan STARTED (detected from command response)")
+            elif action == "stop":
+                self._inventory_running = False
+                logger.info("Inventory scan STOPPED (detected from command response)")
+
+            # Broadcast state change if it changed
+            if self._inventory_running != old_state:
+                await ws_manager.broadcast_inventory_state(self._inventory_running)
 
         # Handle rfid/status response as READER_STATUS event
         if command == "rfid" and action == "status":
@@ -203,6 +227,7 @@ class MqttClient:
                 "memory": system_info.get("free_heap", 0),
                 "network": payload.get("network"),
                 "system": system_info,
+                "inventory_running": self._inventory_running,
             })
         else:
             await ws_manager.broadcast_command_response(payload)

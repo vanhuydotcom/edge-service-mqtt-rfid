@@ -77,6 +77,12 @@ export interface CalibrationResponse {
   message: string
 }
 
+export interface InventoryStatusResponse {
+  ok: boolean
+  mqtt_connected: boolean
+  inventory_running: boolean
+}
+
 // WebSocket Event Types
 
 export type WSEvent =
@@ -85,6 +91,7 @@ export type WSEvent =
   | WSStatusUpdateEvent
   | WSCommandResponseEvent
   | WSReaderStatusEvent
+  | WSInventoryStateEvent
 
 export interface WSTagDetectedEvent {
   type: 'TAG_DETECTED'
@@ -132,6 +139,13 @@ export interface WSReaderStatusEvent {
   uptime: number
   memory: number
   antennas?: number[]
+  inventory_running?: boolean
+  timestamp: string
+}
+
+export interface WSInventoryStateEvent {
+  type: 'INVENTORY_STATE'
+  inventory_running: boolean
   timestamp: string
 }
 

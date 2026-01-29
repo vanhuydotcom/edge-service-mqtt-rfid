@@ -6,8 +6,9 @@ import {
   testAlarm,
   getAntennaPower,
   getReaderStatus,
+  getInventoryStatus,
 } from "../api/client";
-import type { WSEvent, WSTagDetectedEvent, WSCommandResponseEvent, WSReaderStatusEvent } from "../api/types";
+import type { WSEvent, WSTagDetectedEvent, WSCommandResponseEvent, WSReaderStatusEvent, WSInventoryStateEvent } from "../api/types";
 import { useWebSocket } from "../hooks/useWebSocket";
 import { Card, CardHeader, Button, Alert, Slider, EmptyState, LoadingState, StatusBadge } from "../components";
 
@@ -33,7 +34,7 @@ type QueryType = "power" | "status" | null;
 const QUERY_TIMEOUT_MS = 10000; // 10 seconds timeout
 
 export default function Calibration() {
-  const [isScanning, setIsScanning] = useState(false);
+  const [isScanning, setIsScanning] = useState<boolean | null>(null); // null = unknown/loading
   const [liveTags, setLiveTags] = useState<LiveTag[]>([]);
   const [message, setMessage] = useState<{
     type: "success" | "error" | "info";
@@ -50,6 +51,20 @@ export default function Calibration() {
   const [queryingType, setQueryingType] = useState<QueryType>(null);
   const [lastQueryTime, setLastQueryTime] = useState<Date | null>(null);
   const timeoutRef = useRef<number | null>(null);
+
+  // Fetch inventory status on mount
+  useEffect(() => {
+    const fetchInventoryStatus = async () => {
+      try {
+        const status = await getInventoryStatus();
+        setIsScanning(status.inventory_running);
+      } catch (e) {
+        console.error("Failed to fetch inventory status:", e);
+        setIsScanning(false); // Default to false on error
+      }
+    };
+    fetchInventoryStatus();
+  }, []);
 
   // Clear timeout on unmount
   useEffect(() => {
@@ -110,9 +125,17 @@ export default function Calibration() {
         uptime: statusEvent.uptime,
         antennas: statusEvent.antennas,
       });
+      // Update inventory state if included in reader status
+      if (statusEvent.inventory_running !== undefined) {
+        setIsScanning(statusEvent.inventory_running);
+      }
       setLastQueryTime(new Date());
       setMessage({ type: "success", text: "Reader status retrieved successfully" });
       setQueryingType(null);
+    } else if (event.type === "INVENTORY_STATE") {
+      // Real-time inventory state update from backend
+      const stateEvent = event as WSInventoryStateEvent;
+      setIsScanning(stateEvent.inventory_running);
     }
   }, [clearQueryTimeout]);
 
@@ -267,10 +290,44 @@ export default function Calibration() {
         {/* Inventory Control */}
         <Card>
           <CardHeader title="Inventory Scan" icon="📦" />
+          {/* Status Indicator */}
+          <div className={`mb-4 p-3 rounded-lg flex items-center justify-between ${
+            isScanning === null
+              ? "bg-gray-100"
+              : isScanning
+              ? "bg-success-50 border border-success-200"
+              : "bg-gray-100 border border-gray-200"
+          }`}>
+            <div className="flex items-center space-x-2">
+              <span className={`inline-block w-3 h-3 rounded-full ${
+                isScanning === null
+                  ? "bg-gray-400"
+                  : isScanning
+                  ? "bg-success-500 animate-pulse"
+                  : "bg-gray-400"
+              }`} />
+              <span className={`font-medium ${
+                isScanning === null
+                  ? "text-gray-500"
+                  : isScanning
+                  ? "text-success-700"
+                  : "text-gray-600"
+              }`}>
+                {isScanning === null
+                  ? "Loading..."
+                  : isScanning
+                  ? "Scanning"
+                  : "Stopped"}
+              </span>
+            </div>
+            <StatusBadge variant={isScanning ? "success" : "neutral"}>
+              {isScanning ? "RUNNING" : "IDLE"}
+            </StatusBadge>
+          </div>
           <div className="flex space-x-4">
             <Button
               onClick={handleStartScan}
-              // disabled={isScanning}
+              disabled={isScanning === true}
               variant="success"
               className="flex-1"
             >
@@ -278,21 +335,13 @@ export default function Calibration() {
             </Button>
             <Button
               onClick={handleStopScan}
-              // disabled={!isScanning}
+              disabled={isScanning === false || isScanning === null}
               variant="danger"
               className="flex-1"
             >
               Stop Scan
             </Button>
           </div>
-          <p className="mt-2 text-sm text-gray-500">
-            Status:{" "}
-            {isScanning ? (
-              <span className="text-success-600 font-medium">Scanning...</span>
-            ) : (
-              "Idle"
-            )}
-          </p>
         </Card>
 
         {/* Test Alarm */}
